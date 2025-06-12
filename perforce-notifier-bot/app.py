@@ -50,27 +50,21 @@ class PerforceLogger():
         output = self.checkP4()
         payload = self.checkForChanges(output)
 
+        
         if payload != '':
-            message = DiscordWebhook(self.webhookURL)
-            message.set_content(color=0xc8702a, description='`%s`' % (payload))
-            message.set_author(name='Perforce')
-            message.set_footer(text='RikshawStudios/perforce-commit-discord-bot', ts=True)
-            message.send()
 
-            # webhook = DiscordWebhook(self.webhookURL)
-            # embedData = DiscordEmbed(title="Perforce Commit", description='`%s`' % (payload), color=0xc8702a)
-            #
-            # # set author
-            # embedData.set_author(name="Perforce", url="author url", icon_url="author icon url")
-            # # set image
-            # embedData.set_image(url="your image url")
-            # # set footer
-            # embedData.set_footer(text='RikshawStudios/perforce-commit-discord-bot', icon_url="URL of icon")
-            #
-            # webhook.add_embed(embedData)
-            #
-            # webhook.execute()
+            webhook = DiscordWebhook(self.webhookURL)
+            embedData = DiscordEmbed(title="Perforce Commit", description='`%s`' % (payload), color=0xc8702a)
 
+            # set author
+            embedData.set_author(name="Perforce Server")#, icon_url="URL of icon", url="author url")
+
+            # set footer
+            embedData.set_footer(text='RickshawStudios/perforce-commit-discord-bot')#, icon_url="URL of icon")
+
+            webhook.add_embed(embedData)
+            
+            webhook.execute()
 
         else:
             return
