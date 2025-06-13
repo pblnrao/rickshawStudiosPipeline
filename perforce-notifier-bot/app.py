@@ -1,8 +1,11 @@
+import datetime
 import os
 import subprocess
 import time
+from dotenv import load_dotenv
 from discord_webhook import DiscordWebhook
 from discord_webhook import DiscordEmbed
+
 
 class PerforceLogger():
     def __init__(self, webhookURL):
@@ -14,13 +17,28 @@ class PerforceLogger():
         self.global_store = {
             'latest_change': ''
         }
+        load_dotenv()
+        self.env = os.environ.copy()  # Start with the existing environment
+        self.env.update({
+            "P4PORT": "127.0.0.1:1666",
+            "P4USER": "svc_bot_p4",
+            "P4CLIENT": "bot_client",
+            "P4TICKETS": r"C:\Users\VISPL\p4tickets.txt"
+        })
+
+        login_result = subprocess.run(["p4", "info"], capture_output=True, env=self.env)
+        print("LOGIN OUTPUT:\n", login_result.stdout.decode())
 
     def checkP4(self):
         """Query Perforce server for the most recent change.
 
         :return str: The decoded output of the most recent Perforce change
         """
-        p4Changes = subprocess.Popen('p4 changes -t -m 1 -l', stdout=subprocess.PIPE, shell=True)
+        p4Changes = subprocess.Popen(
+            ['p4', 'changes', '-t', '-m', '1', '-l'],
+            stdout=subprocess.PIPE,
+            env=self.env  # Pass the correct environment here
+        )
         return p4Changes.stdout.read().decode('ISO-8859-1')
 
     def checkForChanges(self, output):
@@ -32,13 +50,13 @@ class PerforceLogger():
         if output != self.global_store['latest_change']:
             self.global_store['latest_change'] = output
 
-            if '*pending*' in output: 
+            if '*pending*' in output:
                 return ''
 
             else:
                 return output
 
-        else: 
+        else:
             return ''
 
     def postChanges(self):
@@ -50,24 +68,25 @@ class PerforceLogger():
         output = self.checkP4()
         payload = self.checkForChanges(output)
 
-        
         if payload != '':
 
             webhook = DiscordWebhook(self.webhookURL)
             embedData = DiscordEmbed(title="Perforce Commit", description='`%s`' % (payload), color=0xc8702a)
 
             # set author
-            embedData.set_author(name="Perforce Server")#, icon_url="URL of icon", url="author url")
+            embedData.set_author(name="Perforce Server")  # , icon_url="URL of icon", url="author url")
 
             # set footer
-            embedData.set_footer(text='RickshawStudios/perforce-commit-discord-bot')#, icon_url="URL of icon")
+            embedData.set_footer(text='RickshawStudios/perforce-commit-discord-bot')  # , icon_url="URL of icon")
 
             webhook.add_embed(embedData)
-            
+
             webhook.execute()
+            print('Sent notification @{}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
 
         else:
             return
+
 
 if __name__ == "__main__":
     """Main application entry point.
